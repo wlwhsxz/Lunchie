@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LunchSpot - 점심 메뉴 추천",
-  description: "점심 시간에 어디서 먹을지 고민될 때, 가까운 음식점을 추천해드립니다.",
+  title: "Lunchie - 점심 메뉴 추천",
+  description: "오늘의 점심이 고민될 때, 주변 맛집을 추천해드립니다.",
 };
 
 export default function RootLayout({

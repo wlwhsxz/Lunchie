@@ -62,7 +62,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-background transition-colors duration-300 flex flex-col">
+    <main className="min-h-screen bg-background transition-colors duration-300 flex flex-col lg:py-24 bg-orange-200">
       <AnimatePresence>
         {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
       </AnimatePresence>
@@ -70,7 +70,7 @@ export default function Home() {
       {/* 데스크톱에서 배경 구분을 위한 요소 */}
       <div className="hidden lg:block absolute inset-0 bg-gradient-to-b from-orange-50 to-amber-50 dark:from-orange-950/10 dark:to-amber-950/10 -z-10"></div>
       
-      <div className="container max-w-md lg:max-w-4xl mx-auto px-4 py-8 flex-grow flex flex-col bg-orange-200">
+      <div className="container max-w-md lg:max-w-4xl mx-auto px-4 py-8 flex-grow flex flex-col rounded-xl lg:border-1 lg:border-white">
         {/* Header */}
         <header className="flex justify-end items-center mb-4 lg:mb-6 lg:px-4">
           <ThemeToggle />
@@ -91,7 +91,7 @@ export default function Home() {
             <h2 className="text-3xl lg:text-4xl font-bold mb-3 text-orange-500">점심 메뉴 추천</h2>
             <p className="text-muted-foreground mb-8 lg:text-lg">지금 위치에서 딱 맞는 점심 메뉴를 찾아드려요</p>
             
-            <div className="flex flex-col m-4 p-4 rounded-xl bg-orange-300">
+            <div className="flex flex-col m-4 p-4 lg:p-8 rounded-xl bg-orange-300 lg:w-[80%] lg:mx-auto">
               <div className="relative mb-4">
                 <Input
                   placeholder="현재 위치를 입력하세요"

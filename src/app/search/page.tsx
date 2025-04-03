@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { MapPin, ChevronDown, Sun, Moon, Filter, Utensils, TrendingUp, Wallet, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -182,7 +182,8 @@ function ThemeToggle() {
   );
 }
 
-export default function SearchPage() {
+// 검색 파라미터를 사용하는 컴포넌트를 분리합니다
+function SearchContent() {
   const searchParams = useSearchParams()
   const location = searchParams.get("location") || ""
   const router = useRouter()
@@ -242,167 +243,144 @@ export default function SearchPage() {
   useEffect(() => {
     applyFilters()
   }, [selectedCuisine, priceRange, maxDistance, restaurants])
+  
+  return (
+    <>
+      {/* Header */}
+      <header className="flex justify-between items-center mb-4 lg:mb-8">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => router.push("/")}
+            className="mr-2"
+          >
+            <ArrowLeft className="h-5 w-5 lg:h-6 lg:w-6" />
+          </Button>
+          <h1 className="text-xl lg:text-2xl font-semibold text-orange-600">{decodeURIComponent(location)} 주변 맛집</h1>
+        </div>
+        <ThemeToggle />
+      </header>
 
+      {/* 필터 섹션 */}
+      <div className="mb-4 lg:mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-medium">맛집 검색 결과</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+          >
+            <Filter className="h-4 w-4" />
+            필터
+          </Button>
+        </div>
+
+        {isFilterOpen && (
+          <div className="bg-white dark:bg-zinc-800 rounded-xl p-4 shadow-md mb-4 animate-in slide-in-from-top">
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2">음식 종류</h3>
+              <div className="flex flex-wrap gap-2">
+                {cuisineTypes.map((cuisine) => (
+                  <Badge
+                    key={cuisine}
+                    variant={selectedCuisine === cuisine ? "default" : "outline"}
+                    className={cn(
+                      "cursor-pointer",
+                      selectedCuisine === cuisine
+                        ? "bg-orange-500 hover:bg-orange-600"
+                        : "hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                    )}
+                    onClick={() => setSelectedCuisine(cuisine)}
+                  >
+                    {cuisine}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <h3 className="text-sm font-medium mb-2">가격대: {Array(priceRange[1]).fill("₩").slice(priceRange[0] - 1).join("")}</h3>
+              <Slider
+                defaultValue={priceRange}
+                min={1}
+                max={3}
+                step={1}
+                onValueChange={setPriceRange}
+                className="mb-2"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>저렴</span>
+                <span>보통</span>
+                <span>고급</span>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium mb-2">최대 거리: {maxDistance}m</h3>
+              <Slider
+                defaultValue={[maxDistance]}
+                min={100}
+                max={1000}
+                step={100}
+                onValueChange={(value) => setMaxDistance(value[0])}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 맛집 목록 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        {isLoading ? (
+          // 로딩 상태
+          Array(4).fill(0).map((_, index) => (
+            <Card key={index} className="overflow-hidden transition-all rounded-xl animate-pulse">
+              <CardContent className="p-0">
+                <div className="flex flex-row lg:flex-col">
+                  <div className="w-1/3 lg:w-full h-32 lg:h-40 bg-slate-200 dark:bg-slate-800"></div>
+                  <div className="w-2/3 lg:w-full p-4">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded mb-3 w-2/3"></div>
+                    <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded mb-2 w-1/2"></div>
+                    <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded mb-4 w-1/3"></div>
+                    <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-full mt-3"></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : filteredRestaurants.length > 0 ? (
+          filteredRestaurants.map((restaurant) => (
+            <RestaurantCard key={restaurant.id + Math.random()} restaurant={restaurant} />
+          ))
+        ) : (
+          <div className="col-span-2 py-12 text-center">
+            <p className="text-muted-foreground">
+              검색 조건에 맞는 맛집이 없습니다. 필터를 조정해 보세요.
+            </p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// 메인 컴포넌트에서는 Suspense로 감싸줍니다
+export default function SearchPage() {
   return (
     <main className="min-h-screen bg-background transition-colors duration-300">
       {/* 데스크톱에서 배경 구분을 위한 요소 */}
       <div className="hidden lg:block absolute inset-0 bg-gradient-to-b from-orange-50 to-amber-50 dark:from-orange-950/10 dark:to-amber-950/10 -z-10"></div>
       
       <div className="container max-w-md lg:max-w-4xl mx-auto px-4 py-4 lg:py-8">
-        {/* Header */}
-        <header className="flex justify-between items-center mb-4 lg:mb-8">
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => router.push("/")}
-              className="mr-2"
-            >
-              <ArrowLeft className="h-5 w-5 lg:h-6 lg:w-6" />
-            </Button>
-            <h1 className="text-xl lg:text-2xl font-semibold text-orange-600">{decodeURIComponent(location)} 주변 맛집</h1>
+        <Suspense fallback={
+          <div className="flex justify-center items-center h-32">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
           </div>
-          <ThemeToggle />
-        </header>
-
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 lg:py-32">
-            <div className="w-16 h-16 lg:w-20 lg:h-20 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-muted-foreground lg:text-lg">맛집 정보를 불러오는 중...</p>
-          </div>
-        ) : (
-          <>
-            {/* Desktop Layout: Two Columns */}
-            <div className="lg:flex lg:gap-6">
-              {/* Filters - Left Column on Desktop */}
-              <div className="mb-4 lg:mb-0 lg:w-1/3 lg:flex-shrink-0">
-                <div className="lg:sticky lg:top-8">
-                  <Button
-                    variant="outline"
-                    className="w-full flex justify-between items-center mb-4 h-12 rounded-xl text-base font-medium lg:hidden"
-                    onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  >
-                    <div className="flex items-center">
-                      <Filter className="h-4 w-4 mr-2" />
-                      <span>필터</span>
-                    </div>
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", isFilterOpen && "rotate-180")} />
-                  </Button>
-
-                  <div className={cn(
-                    "bg-muted/50 rounded-2xl p-5 space-y-5 shadow-md", 
-                    !isFilterOpen && "hidden lg:block"
-                  )}>
-                    <div>
-                      <h3 className="text-sm lg:text-base font-medium mb-3">음식 종류</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {cuisineTypes.map((cuisine) => (
-                          <Badge
-                            key={cuisine}
-                            variant={selectedCuisine === cuisine ? "default" : "outline"}
-                            className={cn(
-                              "cursor-pointer px-3 py-1 rounded-full text-sm",
-                              selectedCuisine === cuisine && "bg-orange-500"
-                            )}
-                            onClick={() => setSelectedCuisine(cuisine)}
-                          >
-                            {cuisine}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between mb-3">
-                        <h3 className="text-sm lg:text-base font-medium">가격대</h3>
-                        <span className="text-sm text-muted-foreground">
-                          {Array(priceRange[0]).fill("₩").join("")} - {Array(priceRange[1]).fill("₩").join("")}
-                        </span>
-                      </div>
-                      <Slider
-                        defaultValue={[1, 3]}
-                        max={3}
-                        min={1}
-                        step={1}
-                        value={priceRange}
-                        onValueChange={setPriceRange}
-                      />
-                    </div>
-
-                    <div>
-                      <div className="flex justify-between mb-3">
-                        <h3 className="text-sm lg:text-base font-medium">최대 거리</h3>
-                        <span className="text-sm text-muted-foreground">{maxDistance}m</span>
-                      </div>
-                      <Slider
-                        defaultValue={[1000]}
-                        max={2000}
-                        min={100}
-                        step={100}
-                        value={[maxDistance]}
-                        onValueChange={(value: number[]) => setMaxDistance(value[0])}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Results - Right Column on Desktop */}
-              <section className="mb-8 lg:flex-grow">
-                <Tabs defaultValue="recommended">
-                  <TabsList className="w-full mb-4 bg-muted/70 p-1 rounded-xl">
-                    <TabsTrigger value="recommended" className="flex-1 rounded-lg data-[state=active]:bg-orange-500 data-[state=active]:text-white">
-                      추천 메뉴
-                    </TabsTrigger>
-                    <TabsTrigger value="trending" className="flex-1 rounded-lg data-[state=active]:bg-orange-500 data-[state=active]:text-white">
-                      인기 메뉴
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="recommended" className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
-                    {filteredRestaurants.length > 0 ? (
-                      filteredRestaurants.map((restaurant) => (
-                        <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-                      ))
-                    ) : (
-                      <div className="text-center py-8 lg:col-span-2">
-                        <p className="text-muted-foreground lg:text-lg">필터 조건에 맞는 식당이 없습니다</p>
-                        <Button
-                          variant="link"
-                          onClick={() => {
-                            setSelectedCuisine("전체")
-                            setPriceRange([1, 3])
-                            setMaxDistance(1000)
-                          }}
-                        >
-                          필터 초기화
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="trending" className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4">
-                    {filteredRestaurants.filter((r) => r.trending).length > 0 ? (
-                      filteredRestaurants
-                        .filter((r) => r.trending)
-                        .map((restaurant) => <RestaurantCard key={restaurant.id} restaurant={restaurant} />)
-                    ) : (
-                      <div className="text-center py-8 lg:col-span-2">
-                        <p className="text-muted-foreground lg:text-lg">필터 조건에 맞는 인기 식당이 없습니다</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </section>
-            </div>
-          </>
-        )}
-
-        {/* Footer */}
-        <footer className="text-center text-sm lg:text-base text-muted-foreground pt-4 border-t">
-          <p>점심 메뉴 고민 끝! © 2025 점심이</p>
-        </footer>
+        }>
+          <SearchContent />
+        </Suspense>
       </div>
     </main>
   )
